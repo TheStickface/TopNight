@@ -35,3 +35,4 @@ Minimap.lua
 MapPins.lua
 MinimapVignettes.lua
 Options.lua
+EconomyScanner.lua

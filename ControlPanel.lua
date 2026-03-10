@@ -474,6 +474,45 @@ local function CreateControlPanel()
 
     table.insert(f.panelSections, { key = "QuickWins", header = qwHeader, container = qwContainer, contentHeight = (5 * 14) + 4 })
 
+    -- ----- Section 1.5: Economy Hustles -----
+    local ecoHeader = CreateSectionHeader(f.body, "EconomyHustles", "Economy Hustles")
+    f.ecoHeader = ecoHeader
+
+    local ecoContainer = CreateFrame("Frame", nil, f.body)
+    ecoContainer:SetSize(barWidth, (3 * 22) + 4)
+    f.ecoContainer = ecoContainer
+
+    f.ecoRows = {}
+    for i = 1, 3 do
+        local row = CreateFrame("Frame", nil, ecoContainer, "BackdropTemplate")
+        row:SetSize(barWidth - 4, 20)
+        row:SetPoint("TOPLEFT", 2, -(i - 1) * 22)
+        Topnight:CreateBackdrop(row, { r = 0.1, g = 0.1, b = 0.14, a = 0.6 })
+
+        local icon = row:CreateTexture(nil, "ARTWORK")
+        icon:SetSize(16, 16)
+        icon:SetPoint("LEFT", 2, 0)
+        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+
+        local label = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        label:SetPoint("LEFT", icon, "RIGHT", 4, 0)
+        label:SetWidth(110)
+        label:SetJustifyH("LEFT")
+        label:SetWordWrap(false)
+        label:SetTextColor(C_WHITE.r, C_WHITE.g, C_WHITE.b)
+
+        local value = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        value:SetPoint("RIGHT", -4, 0)
+        value:SetJustifyH("RIGHT")
+
+        row.icon = icon
+        row.label = label
+        row.valueText = value
+        f.ecoRows[i] = row
+    end
+
+    table.insert(f.panelSections, { key = "EconomyHustles", header = ecoHeader, container = ecoContainer, contentHeight = (3 * 22) + 4 })
+
     -- ----- Section 2: Favor Sources -----
     local favHeader = CreateSectionHeader(f.body, "FavorSources", "Favor Sources")
     f.favorHeader = favHeader
@@ -561,6 +600,7 @@ function Topnight:RelayoutSections()
         
         -- Update header text with toggle indicator
         local label = section.key == "QuickWins" and "Quick Wins"
+            or section.key == "EconomyHustles" and "Economy Hustles"
             or section.key == "FavorSources" and "Favor Sources"
             or section.key == "EstateRoster" and "Estate Roster"
             or section.key
@@ -761,6 +801,39 @@ function Topnight:RefreshControlPanel()
             btn.itemName = nil
             btn.itemSource = nil
             btn:Hide()
+        end
+    end
+
+    -- Economy Hustles
+    if controlPanel.ecoRows and self.GetEconomyQuickWins then
+        local hustles = self:GetEconomyQuickWins(3)
+        for i = 1, 3 do
+            local row = controlPanel.ecoRows[i]
+            local item = hustles[i]
+            if item then
+                row.icon:SetTexture(item.icon)
+                row.label:SetText(item.link or "Unknown Item")
+                if item.profit > 10000 then -- more than 1g
+                    local profitG = math.floor(item.profit / 10000)
+                    row.valueText:SetText(string.format("|cffF59E0B+%dg|r AH", profitG))
+                else
+                    row.valueText:SetText("|cff22C55ESell to AH|r")
+                end
+                
+                row:SetScript("OnEnter", function(self)
+                    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                    GameTooltip:SetHyperlink(item.link)
+                    GameTooltip:AddLine(" ")
+                    GameTooltip:AddLine("Vendor Price: " .. GetCoinTextureString(item.vendorTotal), C_WHITE.r, C_WHITE.g, C_WHITE.b)
+                    GameTooltip:AddLine("AH Price: " .. GetCoinTextureString(item.ahTotal), C_ACCENT.r, C_ACCENT.g, C_ACCENT.b)
+                    GameTooltip:AddLine("Profit: " .. GetCoinTextureString(item.profit), C_GREEN.r, C_GREEN.g, C_GREEN.b)
+                    GameTooltip:Show()
+                end)
+                row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+                row:Show()
+            else
+                row:Hide()
+            end
         end
     end
 
