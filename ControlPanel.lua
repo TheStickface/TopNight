@@ -720,10 +720,12 @@ function Topnight:UpdateDirectorDisplay()
             controlPanel.directorDesc:SetText("")
             UpdateDirectorDots(controlPanel, task.stageIndicator.current)
             -- Attuned (stage 3) gets a red tint overlay
-            if task.stageIndicator.current >= 3 then
-                controlPanel.directorAttunedOverlay:Show()
-            else
-                controlPanel.directorAttunedOverlay:Hide()
+            if controlPanel.directorAttunedOverlay then
+                if task.stageIndicator.current >= 3 then
+                    controlPanel.directorAttunedOverlay:Show()
+                else
+                    controlPanel.directorAttunedOverlay:Hide()
+                end
             end
         else
             -- Normal task: hide dots, show description text
