@@ -675,6 +675,31 @@ function Topnight:UpdateControlPanelLayout()
     end
 end
 
+-- Dot fill colors per lit stage (normalized floats, matching C_* constants)
+local PREY_DOT_COLORS = {
+    { r = 0.78, g = 0.20, b = 0.20, a = 0.6 },  -- dot 1 (Warm)
+    { r = 0.86, g = 0.16, b = 0.16, a = 0.8 },  -- dot 2 (Hot)
+    { r = 0.80, g = 0.13, b = 0.13, a = 1.0 },  -- dot 3 (Final)
+}
+local PREY_DOT_EMPTY = { r = 1.0, g = 1.0, b = 1.0, a = 0.08 }
+
+local function UpdateDirectorDots(panel, stage)
+    local dots = panel.directorDots
+    if not dots then return end
+
+    for i = 1, 3 do
+        local dot = dots[i]
+        if not dot then break end
+        dot:Show()
+        if i <= stage then
+            local c = PREY_DOT_COLORS[i]
+            dot:SetVertexColor(c.r, c.g, c.b, c.a)
+        else
+            dot:SetVertexColor(PREY_DOT_EMPTY.r, PREY_DOT_EMPTY.g, PREY_DOT_EMPTY.b, PREY_DOT_EMPTY.a)
+        end
+    end
+end
+
 -- ---------------------------------------------------------------------------
 -- Director Display (renders current index without re-evaluating)
 -- ---------------------------------------------------------------------------
@@ -689,7 +714,28 @@ function Topnight:UpdateDirectorDisplay()
     if total > 0 and idx >= 1 and idx <= total then
         local task = tasks[idx]
         controlPanel.directorTitle:SetText("|cffF59E0B> " .. task.title .. "|r")
-        controlPanel.directorDesc:SetText("|cffE2E8F0" .. task.description .. "|r")
+
+        if task.stageIndicator then
+            -- Prey task: render dots, hide description text
+            controlPanel.directorDesc:SetText("")
+            UpdateDirectorDots(controlPanel, task.stageIndicator.current)
+            -- Attuned (stage 3) gets a red tint overlay
+            if task.stageIndicator.current >= 3 then
+                controlPanel.directorAttunedOverlay:Show()
+            else
+                controlPanel.directorAttunedOverlay:Hide()
+            end
+        else
+            -- Normal task: hide dots, show description text
+            if controlPanel.directorDots then
+                for _, dot in ipairs(controlPanel.directorDots) do dot:Hide() end
+            end
+            if controlPanel.directorAttunedOverlay then
+                controlPanel.directorAttunedOverlay:Hide()
+            end
+            controlPanel.directorDesc:SetText("|cffE2E8F0" .. (task.description or "") .. "|r")
+        end
+
         controlPanel.currentDirectorAction = task.action
         controlPanel.currentDirectorTaskTitle = task.title
         controlPanel.directorDismissBtn:Show()
@@ -708,6 +754,12 @@ function Topnight:UpdateDirectorDisplay()
     else
         controlPanel.directorTitle:SetText("|cffF59E0B> All Done|r")
         controlPanel.directorDesc:SetText("|cff6B7280All weekly tasks completed!|r")
+        if controlPanel.directorDots then
+            for _, dot in ipairs(controlPanel.directorDots) do dot:Hide() end
+        end
+        if controlPanel.directorAttunedOverlay then
+            controlPanel.directorAttunedOverlay:Hide()
+        end
         controlPanel.currentDirectorAction = nil
         controlPanel.currentDirectorTaskTitle = nil
         controlPanel.directorDismissBtn:Hide()
