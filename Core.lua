@@ -98,6 +98,12 @@ Topnight:RegisterEvent("PLAYER_LOGIN", function(self)
     if self.InitEconomyScanner then
         self:InitEconomyScanner()
     end
+    if self.InitKnowledgePoints then
+        self:InitKnowledgePoints()
+    end
+    if self.InitPrey then
+        self:InitPrey()
+    end
 
     -- Scan housing catalog after a short delay for API readiness
     if self.ScanCatalog then
