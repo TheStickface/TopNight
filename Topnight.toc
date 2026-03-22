@@ -29,6 +29,7 @@ Endeavors.lua
 Commands.lua
 HousingData.lua
 CollectionTracker.lua
+Prey.lua
 ShoppingList.lua
 ControlPanel.lua
 Minimap.lua
@@ -37,4 +38,3 @@ MinimapVignettes.lua
 Options.lua
 EconomyScanner.lua
 KnowledgePoints.lua
-Prey.lua
