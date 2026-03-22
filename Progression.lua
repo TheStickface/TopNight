@@ -39,6 +39,10 @@ function Topnight:EvaluateProgressionTasks()
     local ok4, err4 = pcall(function() self:EvaluateEndeavors(AddTask) end)
     if not ok4 then self:Debug("Endeavor evaluator error: " .. tostring(err4)) end
 
+    -- 1c. Prey Hunts
+    local okP, errP = pcall(function() self:EvaluatePreyHunts() end)
+    if not okP then self:Debug("Prey evaluator error: " .. tostring(errP)) end
+
     -- 2. Midnight Weekly Quests
     local ok3, err3 = pcall(function() self:EvaluateWeeklyLockouts(AddTask) end)
     if not ok3 then self:Debug("Weekly evaluator error: " .. tostring(err3)) end
@@ -258,4 +262,25 @@ function Topnight:EvaluateEndeavors(addTask)
                 Topnight:ShowControlPanel()
             end)
     end
+end
+
+-- ---------------------------------------------------------------------------
+-- Evaluator: Prey Hunts (Priority 83)
+-- ---------------------------------------------------------------------------
+function Topnight:EvaluatePreyHunts()
+    if not self.GetPreyHuntData then return end
+
+    local data = self:GetPreyHuntData()
+    if not data or not data.active then return end
+
+    -- Insert directly (bypasses the fixed 4-param addTask — stageIndicator needs a 5th field)
+    table.insert(self.ProgressionTasks, {
+        title          = "Prey Hunt",
+        description    = nil,
+        priority       = 83,
+        stageIndicator = { current = data.stage, max = 3 },
+        action         = function()
+            if ToggleWorldMap then ToggleWorldMap() end
+        end,
+    })
 end
