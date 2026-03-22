@@ -185,6 +185,34 @@ local function CreateControlPanel()
     f.directorDesc:SetJustifyV("TOP")
     f.directorDesc:SetText("|cff9CA3AFAwaiting evaluation...|r")
 
+    -- Stage dots: 3 circles shown when current task has stageIndicator
+    -- Anchored to the top-right of the title row
+    local DOT_SIZE = 7
+    local DOT_GAP  = 4
+    f.directorDots = {}
+    for i = 1, 3 do
+        local dot = f.directorBanner:CreateTexture(nil, "OVERLAY")
+        dot:SetSize(DOT_SIZE, DOT_SIZE)
+        dot:SetTexture("Interface\\Buttons\\WHITE8x8")
+        if i == 1 then
+            -- Anchor rightmost dot first, then chain left-to-right
+            dot:SetPoint("RIGHT", f.directorBanner, "TOPRIGHT",
+                -((DOT_SIZE + DOT_GAP) * 2) - 8, -(DOT_SIZE / 2) - 6)
+        else
+            dot:SetPoint("LEFT", f.directorDots[i - 1], "RIGHT", DOT_GAP, 0)
+        end
+        dot:Hide()
+        f.directorDots[i] = dot
+    end
+
+    -- Attuned (Final stage) red background tint — shown only when stage == 3
+    -- C_RED is defined at the top of this file: local C_RED = { r=0.93, g=0.27, b=0.17 }
+    f.directorAttunedOverlay = f.directorBanner:CreateTexture(nil, "BACKGROUND")
+    f.directorAttunedOverlay:SetAllPoints()
+    f.directorAttunedOverlay:SetTexture("Interface\\Buttons\\WHITE8x8")
+    f.directorAttunedOverlay:SetVertexColor(C_RED.r * 0.18, C_RED.g * 0.02, C_RED.b * 0.02, 0.45)
+    f.directorAttunedOverlay:Hide()
+
     -- Dismiss/snooze button (top-right X)
     f.directorDismissBtn = CreateFrame("Button", nil, f.directorBanner)
     f.directorDismissBtn:SetSize(14, 14)
@@ -513,6 +541,46 @@ local function CreateControlPanel()
 
     table.insert(f.panelSections, { key = "EconomyHustles", header = ecoHeader, container = ecoContainer, contentHeight = (3 * 22) + 4 })
 
+    -- ----- Section 1.5: Knowledge Points -----
+    local kpHeader = CreateSectionHeader(f.body, "KnowledgePoints", "Knowledge Points")
+    f.kpHeader = kpHeader
+
+    local kpRowCount = 4  -- max number of professions to display
+    local kpRowHeight = 20
+    local kpContentHeight = (kpRowCount * kpRowHeight) + 4
+    local kpContainer = CreateFrame("Frame", nil, f.body)
+    kpContainer:SetSize(barWidth, kpContentHeight)
+    f.kpContainer = kpContainer
+
+    f.kpRows = {}
+    for i = 1, kpRowCount do
+        local row = CreateFrame("Frame", nil, kpContainer)
+        row:SetSize(barWidth - 8, kpRowHeight)
+        row:SetPoint("TOPLEFT", 4, -(i - 1) * kpRowHeight)
+
+        local icon = row:CreateTexture(nil, "ARTWORK")
+        icon:SetSize(14, 14)
+        icon:SetPoint("LEFT", 0, 0)
+        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+
+        local label = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        label:SetPoint("LEFT", icon, "RIGHT", 4, 0)
+        label:SetJustifyH("LEFT")
+        label:SetWordWrap(false)
+        label:SetTextColor(C_WHITE.r, C_WHITE.g, C_WHITE.b)
+
+        local value = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        value:SetPoint("RIGHT", -4, 0)
+        value:SetJustifyH("RIGHT")
+
+        row.icon = icon
+        row.label = label
+        row.valueText = value
+        f.kpRows[i] = row
+    end
+
+    table.insert(f.panelSections, { key = "KnowledgePoints", header = kpHeader, container = kpContainer, contentHeight = kpContentHeight })
+
     -- ----- Section 2: Favor Sources -----
     local favHeader = CreateSectionHeader(f.body, "FavorSources", "Favor Sources")
     f.favorHeader = favHeader
@@ -601,6 +669,7 @@ function Topnight:RelayoutSections()
         -- Update header text with toggle indicator
         local label = section.key == "QuickWins" and "Quick Wins"
             or section.key == "EconomyHustles" and "Economy Hustles"
+            or section.key == "KnowledgePoints" and "Knowledge Points"
             or section.key == "FavorSources" and "Favor Sources"
             or section.key == "EstateRoster" and "Estate Roster"
             or section.key
@@ -834,6 +903,48 @@ function Topnight:RefreshControlPanel()
             else
                 row:Hide()
             end
+        end
+    end
+
+    -- Knowledge Points
+    if controlPanel.kpRows and self.GetKPSummary then
+        local kpData = self:GetKPSummary()
+        for i = 1, 4 do
+            local row = controlPanel.kpRows[i]
+            local entry = kpData[i]
+            if entry then
+                row.icon:SetTexture(entry.iconID)
+                row.label:SetText(entry.profName)
+                
+                if entry.kpMax > 0 then
+                    local pct = entry.kpEarned / entry.kpMax
+                    local color
+                    if pct >= 1.0 then
+                        color = C_GREEN
+                    elseif pct >= 0.5 then
+                        color = C_ACCENT
+                    else
+                        color = C_GRAY
+                    end
+                    row.valueText:SetText(string.format("|cff%02x%02x%02x%d/%d KP|r",
+                        color.r * 255, color.g * 255, color.b * 255,
+                        entry.kpEarned, entry.kpMax))
+                else
+                    row.valueText:SetText("|cff6B7280No KP data|r")
+                end
+                row:Show()
+            else
+                row:Hide()
+            end
+        end
+        
+        -- If no professions found at all
+        if #kpData == 0 then
+            controlPanel.kpRows[1].icon:SetTexture(134939)  -- question mark icon
+            controlPanel.kpRows[1].label:SetText("|cff6B7280No professions detected.|r")
+            controlPanel.kpRows[1].valueText:SetText("")
+            controlPanel.kpRows[1]:Show()
+            for i = 2, 4 do controlPanel.kpRows[i]:Hide() end
         end
     end
 
