@@ -2,7 +2,7 @@
 ## Title: |cff8B5CF6Topnight|r
 ## Notes: |cff9CA3AFHousing companion — collection tracker, shopping list & quick panel|r
 ## Author: scorp
-## Version: 1.6.0
+## Version: 1.7.0
 ## SavedVariables: TopnightDB
 ## IconTexture: Interface\AddOns\Topnight\icon.png
 ## LoadSavedVariablesFirst: 1
