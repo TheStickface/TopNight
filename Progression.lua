@@ -40,7 +40,7 @@ function Topnight:EvaluateProgressionTasks()
     if not ok4 then self:Debug("Endeavor evaluator error: " .. tostring(err4)) end
 
     -- 1c. Prey Hunts
-    local okP, errP = pcall(function() self:EvaluatePreyHunts() end)
+    local okP, errP = pcall(function() self:EvaluatePreyHunts() end)  -- no AddTask arg: inserts directly (stageIndicator)
     if not okP then self:Debug("Prey evaluator error: " .. tostring(errP)) end
 
     -- 2. Midnight Weekly Quests

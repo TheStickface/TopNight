@@ -197,7 +197,7 @@ local function CreateControlPanel()
         if i == 1 then
             -- Anchor rightmost dot first, then chain left-to-right
             dot:SetPoint("RIGHT", f.directorBanner, "TOPRIGHT",
-                -((DOT_SIZE + DOT_GAP) * 2) - 8, -(DOT_SIZE / 2) - 6)
+                -((DOT_SIZE + DOT_GAP) * 2) - 20, -(DOT_SIZE / 2) - 6)
         else
             dot:SetPoint("LEFT", f.directorDots[i - 1], "RIGHT", DOT_GAP, 0)
         end
