@@ -33,7 +33,7 @@ The default WoW UI shows only a vague crystal icon. Topnight will replace this w
 **Purpose:** Data layer for prey hunt state.
 
 **Public API:**
-- `Topnight:GetPreyHuntData()` → `{ stage = 0–3, active = bool, zone = string }` or `nil`
+- `Topnight:GetPreyHuntData()` → `{ stage = 0–3, active = bool }` or `nil`
 - `Topnight:InitPrey()` — registers events and initializes module
 
 **Behavior:**
@@ -51,16 +51,18 @@ The default WoW UI shows only a vague crystal icon. Topnight will replace this w
 
 - Called from `EvaluateProgressionTasks()` alongside existing evaluators
 - Calls `Topnight:GetPreyHuntData()`
-- If `active == true` and `stage >= 1`, adds a task:
+- If `active == true` and `stage >= 1`, inserts a task directly via `table.insert(Topnight.ProgressionTasks, ...)` rather than going through the local `addTask` callback (which has a fixed four-parameter signature that cannot carry `stageIndicator`). This keeps all existing call sites unchanged:
+  ```lua
+  table.insert(Topnight.ProgressionTasks, {
+      title          = "Prey Hunt",
+      description    = nil,   -- dots replace description; nothing to display as text
+      priority       = 83,
+      stageIndicator = { current = N, max = 3 },
+      action         = function() ... end,
+  })
   ```
-  title       = "Prey Hunt"
-  priority    = 83
-  stageIndicator = { current = N, max = 3 }
-  action      = open map / hunt table
-  ```
-- If `stage == 3` (Attuned), description is set to `"__attuned"` as a signal to the renderer
 
-**Priority:** 83 — slots above weekly quests (82/85) to surface an attuned hunt prominently.
+**Priority:** 83 — intentionally sits above an in-progress weekly quest (82) but below an un-picked-up weekly quest (85). An attuned hunt is actionable but less urgent than a quest the player hasn't started yet.
 
 ---
 
@@ -68,12 +70,13 @@ The default WoW UI shows only a vague crystal icon. Topnight will replace this w
 
 **Task card rendering:**
 - When a task has `stageIndicator`, render 3 dots on the right side of the title row instead of description text
-- Dot states:
-  - Filled dot 1: `rgba(200,50,50,0.6)` — stage ≥ 1
-  - Filled dot 2: `rgba(220,40,40,0.8)` — stage ≥ 2
-  - Filled dot 3: `#cc2222` with glow — stage == 3 (Attuned)
-  - Empty dot: `rgba(255,255,255,0.08)` with subtle border
-- When stage == 3 (Attuned): card border color shifts to red (`C_RED`) to draw attention
+- Dot states (colors as normalized floats, matching existing `C_*` conventions):
+  - Filled dot 1: `{ r=0.78, g=0.20, b=0.20, a=0.6 }` — stage ≥ 1
+  - Filled dot 2: `{ r=0.86, g=0.16, b=0.16, a=0.8 }` — stage ≥ 2
+  - Filled dot 3: `{ r=0.80, g=0.13, b=0.13, a=1.0 }` with glow — stage == 3 (Attuned)
+  - Empty dot: `{ r=1.0, g=1.0, b=1.0, a=0.08 }` with subtle border
+- When a task has `stageIndicator`, `task.description` is `nil`; the renderer skips the description line entirely
+- When stage == 3 (Attuned): card border color shifts to `C_RED` (existing constant in `ControlPanel.lua`: `{ r=0.93, g=0.27, b=0.17 }`) to draw attention
 - No label text alongside the dots
 
 ---
@@ -97,7 +100,7 @@ PLAYER_LOGIN
       → EvaluateProgressionTasks()
           → EvaluatePreyHunts()
               → GetPreyHuntData()
-              → addTask(..., stageIndicator = { current, max = 3 })
+              → table.insert(Topnight.ProgressionTasks, { ..., stageIndicator = { current, max = 3 } })
       → render task cards
           → detect stageIndicator → draw 3 dots
 ```
