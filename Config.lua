@@ -47,6 +47,11 @@ local DEFAULTS = {
     endeavors = {
         enabled = true,
     },
+
+    -- Housing: Knowledge Points Tracker
+    knowledgePoints = {
+        enabled = true,
+    },
     
     -- Housing: Estate Manager (Account-wide alt tracking)
     alts = {},
